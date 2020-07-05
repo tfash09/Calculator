@@ -1,5 +1,6 @@
 import React, {Component} from 'react';
 import Button from './component/Button';
+import './css/style.css';
 
 class App extends Component {
   constructor(props){
@@ -7,16 +8,43 @@ class App extends Component {
 
     this.state = {
       current: "0",
-      previous: []
+      previous: "",
+      nextIsReset: false
     }
   }
 
   reset = () =>{
-    this.setState({result: "0"});
+    this.setState({current: "0", previous: "", nextIsReset: false});
   }
 
   addToCurrent = (symbol) =>{
-    this.setState({current: this.state.current + symbol });
+    if(["/","-","+","*"].indexOf(symbol) > -1 ){
+      let {previous, current} = this.state;
+      if (previous === "") {
+        previous = this.state.current + " " + symbol;
+        this.setState({previous, nextIsReset: true, current: 0});          
+      }else{
+        previous = String(previous + " " + current + " " + symbol);
+        current = eval(String(this.state.previous + current));
+        this.setState({current, previous, nextIsReset:true})
+      }
+    }else{
+      if ((this.state.current === "0" && symbol !== ".") || this.state.nextIsReset === true) {
+        this.setState({current: symbol, nextIsReset: false });        
+      }
+      else{
+        this.setState({current: this.state.current + symbol, nextIsReset: false });
+      }
+    }
+  }
+
+  calculate = () => {
+    let {current, previous, nextIsReset} = this.state;
+    if (previous.length > 0) {
+        previous = String(previous + " " + current);
+        current = eval(String(this.state.previous + current));
+        this.setState({current, previous, nextIsReset:false})
+    }
   }
 
   render(){
@@ -26,7 +54,7 @@ class App extends Component {
       {symbol: '7', cols: 1, action: this.addToCurrent},
       {symbol: '8', cols: 1, action: this.addToCurrent},
       {symbol: '9', cols: 1, action: this.addToCurrent},
-      {symbol: 'X', cols: 1, action: this.addToCurrent},
+      {symbol: '*', cols: 1, action: this.addToCurrent},
       {symbol: '4', cols: 1, action: this.addToCurrent},
       {symbol: '5', cols: 1, action: this.addToCurrent},
       {symbol: '6', cols: 1, action: this.addToCurrent},
@@ -37,15 +65,21 @@ class App extends Component {
       {symbol: '+', cols: 1, action: this.addToCurrent},
       {symbol: '0', cols: 2, action: this.addToCurrent},
       {symbol: '.', cols: 1, action: this.addToCurrent},
-      {symbol: '=', cols: 1, action: this.addToCurrent},
+      {symbol: '=', cols: 1, action: this.calculate},
     ];
 
     return (
       <div className="App">
+        { this.state.previous.length > 0 ?
+            <div className="floaty-last">
+              { this.state.previous}
+            </div>        
+          : null
+        }
         <input type="text" value={this.state.current} className="result" />
         {
           button.map((btn, i) =>{
-          return <Button symbol={btn.symbol} cols={btn.cols} action={(symbol) => btn.action}> </Button>
+            return <Button key={i} symbol={btn.symbol} cols={btn.cols} action={(symbol) => btn.action(symbol)} />
           })
         }
       </div>
